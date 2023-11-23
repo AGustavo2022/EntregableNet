@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using entregableNET.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using entregableNET.Infrastructure;
+using entregableNET.DTO;
 
 namespace entregableNET.Controllers
 {
@@ -8,28 +11,61 @@ namespace entregableNET.Controllers
     
     public class TasksController : ControllerBase
     {
-        [HttpGet]
-        public ActionResult GETall()
+        private readonly IUnitOfWork _unitOfWork;
+
+        public TasksController(IUnitOfWork unitOfWork)
         {
-            return Ok();
+            _unitOfWork = unitOfWork;
         }
 
-        [HttpPost]  
-        public ActionResult POST(Task task)
+        [HttpGet]
+        [Route("GetAll")]
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(task);
+            return  ResponseFactory.CreateSuccessResponse(200,await _unitOfWork.TasksRepository.GetAll());
+        }
+
+
+        [HttpPost]
+        [Route("Post")]
+        public async Task<IActionResult> Post(TasksDTO tasksDTO)
+        {
+            var result = await _unitOfWork.TasksRepository.InsertTasks(tasksDTO);
+            if (result)
+            {
+
+                await _unitOfWork.Complete();
+                return ResponseFactory.CreateSuccessResponse(201, "El usuario se registro correctamente");
+            }
+            return ResponseFactory.CreateErrorResponse(400, "Error Contactar a sistema");
+
         }
 
         [HttpPut]
-        public ActionResult PUT(Task task)
+        [Route("Update")]
+        public async Task<IActionResult> Update(int id, TasksDTO tasksDTO)
         {
-            return Ok(task);
+            var result = await _unitOfWork.TasksRepository.UpdateTasks(tasksDTO, id);
+            if (result)
+            {
+                await _unitOfWork.Complete();
+                return ResponseFactory.CreateSuccessResponse(200, "El usuario se actualizo correctamente");
+            }
+            return ResponseFactory.CreateErrorResponse(400, "Error Contactar a sistema");
+
         }
 
         [HttpDelete]
-        public ActionResult DELETE(Task task)
+        [Route("Delete")]
+        public async Task<IActionResult> Delete(int id)
         {
-            return Ok(task);
+            var result = await _unitOfWork.TasksRepository.DeleteTasks(id);
+            if (result)
+            {
+                await _unitOfWork.Complete();
+                return ResponseFactory.CreateSuccessResponse(200, "El usuario se Elimino correctamente");
+            }
+            return ResponseFactory.CreateErrorResponse(400, "Error Contactar a sistema");
 
         }
     }
